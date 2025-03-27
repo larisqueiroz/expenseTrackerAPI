@@ -1,0 +1,25 @@
+services:
+  web:
+    build: .
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+    restart: on-failure
+    networks:
+      - appnetwork
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_NAME: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PORT: 3452
+    networks:
+      - appnetwork
+
+networks:
+  appnetwork:
+    driver: bridge
