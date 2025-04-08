@@ -20,7 +20,7 @@ import expenseTracker
 from expenseTracker.views import *
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('v1/', include('expenseTracker.urls')),
+    path('api/v1/admin/', admin.site.urls),
+    path('api/v1/', include('expenseTracker.urls')),
 
 ]

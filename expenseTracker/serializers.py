@@ -5,9 +5,14 @@ from .models import *
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'email')
+        fields = ('id', 'email', 'username')
 
 class ExpenseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
-        fields = ('value', 'user', 'source')
+        fields = ('id', 'value', 'user', 'source')
+
+class ExpensePostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Expense
+        fields = ('value', 'source')
