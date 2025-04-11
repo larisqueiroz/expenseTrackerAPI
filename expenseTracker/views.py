@@ -11,12 +11,17 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import check_password
 import datetime
+from rest_framework.pagination import PageNumberPagination
 
 class ExpenseView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
         expenses = Expense.objects.all().filter(active=True)
-        return Response(ExpenseSerializer(expenses, many=True).data, status=status.HTTP_200_OK)
+
+        paginator = PageNumberPagination()
+        paged = paginator.paginate_queryset(expenses, request)
+
+        return paginator.get_paginated_response(ExpenseSerializer(paged, many=True).data)
 
     def post(self, request):
         serializer = ExpensePostSerializer(data=request.data)
@@ -86,8 +91,12 @@ class UserView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
         users = User.objects.all().filter(is_active=True)
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        paginator = PageNumberPagination()
+        paged = paginator.paginate_queryset(users, request)
+
+        serializer = UserSerializer(paged, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
         email = request.data.get('email')
