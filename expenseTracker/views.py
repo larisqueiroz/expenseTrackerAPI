@@ -12,11 +12,18 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import check_password
 import datetime
 from rest_framework.pagination import PageNumberPagination
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import ExpenseFilter
 
 class ExpenseView(APIView):
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ExpenseFilter
     def get(self, request):
         expenses = Expense.objects.all().filter(active=True)
+
+        for backend in list(self.filter_backends):
+            expenses = backend().filter_queryset(request, expenses, self)
 
         paginator = PageNumberPagination()
         paged = paginator.paginate_queryset(expenses, request)
@@ -79,7 +86,7 @@ class ExpenseDetailView(APIView):
 
         expense = Expense.objects.filter(active=True).filter(id=id).first()
         if expense is None:
-            return Response({'error': 'Expense does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Expense does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
         expense.active = False
         expense.updated_at = str(datetime.datetime.now())
@@ -90,13 +97,16 @@ class ExpenseDetailView(APIView):
 class UserView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        users = User.objects.all().filter(is_active=True)
+        if request.user.is_superuser:
+            users = User.objects.all().filter(is_active=True)
 
-        paginator = PageNumberPagination()
-        paged = paginator.paginate_queryset(users, request)
+            paginator = PageNumberPagination()
+            paged = paginator.paginate_queryset(users, request)
 
-        serializer = UserSerializer(paged, many=True)
-        return paginator.get_paginated_response(serializer.data)
+            serializer = UserSerializer(paged, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        else:
+            return Response("{'error':'User does not have access'}", status=403)
 
     def post(self, request):
         email = request.data.get('email')
@@ -124,7 +134,7 @@ class UserDetailView(APIView):
 
         user = User.objects.filter(is_active=True).filter(id=id).first()
         if user is None:
-            return Response({'error': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
         user.is_active = False
         user.updated_at = str(datetime.datetime.now())
@@ -143,7 +153,7 @@ class UserDetailView(APIView):
 
         user = User.objects.filter(is_active=True).filter(id=id).first()
         if user is None:
-            return Response({'error': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
         user.username = username
         user.save()
@@ -156,7 +166,7 @@ class UserDetailView(APIView):
 
         user = User.objects.filter(is_active=True).filter(id=id).first()
         if user is None:
-            return Response({'error': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
