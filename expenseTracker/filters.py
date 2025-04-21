@@ -6,4 +6,5 @@ class ExpenseFilter(django_filters.FilterSet):
         model = Expense
         fields = {'value': ['exact', 'lt', 'gt', 'range'],
                   'source': ['exact'],
-                  'user': ['exact']}
+                  'user': ['exact'],
+                  'id': ['exact']}

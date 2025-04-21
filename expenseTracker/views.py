@@ -95,7 +95,10 @@ class ExpenseDetailView(APIView):
         return Response(ExpenseSerializer(expense).data, status=status.HTTP_200_OK)
 
 class UserView(APIView):
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [AllowAny()]
+        return [IsAuthenticated()]
     def get(self, request):
         if request.user.is_superuser:
             users = User.objects.all().filter(is_active=True)
@@ -115,7 +118,7 @@ class UserView(APIView):
         if not email or not password:
             return Response({'error': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if User.objects.filter(is_active=True).filter(username=email).exists():
+        if User.objects.filter(is_active=True).filter(email=email).exists():
             return Response({'error': 'Email already in use'}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.create_user(username=email, email=email, password=password)
@@ -126,49 +129,60 @@ class UserDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, id):
-        if id is None:
-            return Response({'error': 'Id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.user.is_superuser:
+            if id is None:
+                return Response({'error': 'Id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not request.user.is_superuser:
-            return Response({'error': 'Logged user is not superuser'}, status=status.HTTP_400_BAD_REQUEST)
+            if not request.user.is_superuser:
+                return Response({'error': 'Logged user is not superuser'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = User.objects.filter(is_active=True).filter(id=id).first()
-        if user is None:
-            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+            user = User.objects.filter(is_active=True).filter(id=id).first()
+            if user is None:
+                return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
-        user.is_active = False
-        user.updated_at = str(datetime.datetime.now())
-        user.save()
+            user.is_active = False
+            user.updated_at = str(datetime.datetime.now())
+            user.save()
 
-        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+            return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+        else:
+            return Response("{'error':'User does not have access'}", status=403)
+
 
     def put(self, request, id):
-        username = request.data.get('username')
+        if request.user.is_superuser:
+            username = request.data.get('username')
 
-        if username is None:
-            return Response({'error': 'Username required'}, status=status.HTTP_400_BAD_REQUEST)
+            if username is None:
+                return Response({'error': 'Username required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if id is None:
-            return Response({'error': 'Id is required'}, status=status.HTTP_400_BAD_REQUEST)
+            if id is None:
+                return Response({'error': 'Id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = User.objects.filter(is_active=True).filter(id=id).first()
-        if user is None:
-            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+            user = User.objects.filter(is_active=True).filter(id=id).first()
+            if user is None:
+                return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
-        user.username = username
-        user.save()
+            user.username = username
+            user.save()
 
-        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+            return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+        else:
+            return Response("{'error':'User does not have access'}", status=403)
 
     def get(self, request, id):
-        if id is None:
-            return Response({'error': 'Id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.user.is_superuser:
+            if id is None:
+                return Response({'error': 'Id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = User.objects.filter(is_active=True).filter(id=id).first()
-        if user is None:
-            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+            user = User.objects.filter(is_active=True).filter(id=id).first()
+            if user is None:
+                return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+            return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+        else:
+            return Response("{'error':'User does not have access'}", status=403)
+
 
 class UserLogin(APIView):
     permission_classes = [IsAuthenticated]
@@ -179,7 +193,7 @@ class JWTView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
 
-        saved = User.objects.filter(is_active=True).filter(username=request.data.get('email')).first()
+        saved = User.objects.filter(is_active=True).filter(email=request.data.get('email')).first()
         if not saved:
             return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
