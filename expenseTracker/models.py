@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from .utils import Category
 
 class Base(models.Model):
-    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4())
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
     active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
